@@ -5,3 +5,13 @@ out
 .eslintcache
 *.log*
 release
+
+# MPV binary (downloaded from https://mpv.io/installation/)
+resources/mpv/
+
+# Qoder configuration directory
+.qoder/
+
+# Git worktrees (agent/dev)
+.worktrees
+.worktrees/

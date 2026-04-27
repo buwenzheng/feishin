@@ -2,6 +2,7 @@ import { t } from 'i18next';
 import isElectron from 'is-electron';
 import { useCallback, useEffect } from 'react';
 
+import { eventEmitter } from '/@/renderer/events/event-emitter';
 import { useIsRadioActive } from '/@/renderer/features/radio/hooks/use-radio-player';
 import { usePlayerActions, useVolumeWheelStep } from '/@/renderer/store';
 import { toast } from '/@/shared/components/toast/toast';
@@ -9,6 +10,14 @@ import { toast } from '/@/shared/components/toast/toast';
 const mpvPlayer = isElectron() ? window.api.mpvPlayer : null;
 const mpvPlayerListener = isElectron() ? window.api.mpvPlayerListener : null;
 const ipc = isElectron() ? window.api.ipc : null;
+
+// MPV reload/restart introduces a brief "stopped" event window while mpv is idle and queue is being
+// re-populated. Treating that as a user-initiated stop causes the renderer state machine to fight
+// the restart flow (stop/pause/seek/play churn) and can lead to immediate playback failure.
+let ignoreStopUntilMs = 0;
+const armIgnoreStopWindow = (ms: number) => {
+    ignoreStopUntilMs = Math.max(ignoreStopUntilMs, Date.now() + ms);
+};
 
 export const useMainPlayerListener = () => {
     const isRadioActive = useIsRadioActive();
@@ -44,8 +53,30 @@ export const useMainPlayerListener = () => {
     );
 
     useEffect(() => {
+        const handleMpvReload = () => {
+            // Stop events may arrive during restart/idle. Give the engine time to restart and re-queue.
+            armIgnoreStopWindow(2000);
+        };
+
+        eventEmitter.on('MPV_RELOAD', handleMpvReload);
+
+        // Also arm ignore window if we get an explicit restart completion signal.
+        // Queue repopulation happens right after this.
+        const handleRestartComplete = () => {
+            armIgnoreStopWindow(2000);
+        };
+
+        ipc?.on('renderer-player-restart-complete', handleRestartComplete);
+
+        const cleanupCommon = () => {
+            eventEmitter.off('MPV_RELOAD', handleMpvReload);
+            ipc?.removeListener('renderer-player-restart-complete', handleRestartComplete);
+        };
+
         if (!mpvPlayerListener) {
-            return;
+            return () => {
+                cleanupCommon();
+            };
         }
 
         mpvPlayerListener.rendererPlayPause(() => {
@@ -80,6 +111,12 @@ export const useMainPlayerListener = () => {
 
         mpvPlayerListener.rendererStop(() => {
             if (!isRadioActive) {
+                if (Date.now() < ignoreStopUntilMs) {
+                    console.log(
+                        '[PLAYER] Ignoring MPV stop event during reload/restart window',
+                    );
+                    return;
+                }
                 mediaStop({ reset: false });
             }
         });
@@ -117,6 +154,7 @@ export const useMainPlayerListener = () => {
         });
 
         return () => {
+            cleanupCommon();
             ipc?.removeAllListeners('renderer-player-play-pause');
             ipc?.removeAllListeners('renderer-player-next');
             ipc?.removeAllListeners('renderer-player-previous');

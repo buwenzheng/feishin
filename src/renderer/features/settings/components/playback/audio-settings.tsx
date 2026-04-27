@@ -22,23 +22,31 @@ const getAudioDevices = async () => {
     return (devices || []).filter((dev: MediaDeviceInfo) => dev.kind === 'audiooutput');
 };
 
-const getMpvAudioDevices = async () => {
+const getMpvAudioDevices = async (aoBackend?: string) => {
     if (!mpvPlayer) {
         console.log('mpvPlayer not found');
         return [];
     }
 
     try {
-        return await mpvPlayer.getAudioDevices();
+        return await mpvPlayer.getAudioDevices(aoBackend);
     } catch (error) {
         console.error('Failed to get MPV audio devices:', error);
         return [];
     }
 };
 
-export type AudioDeviceOption = { label: string; value: string };
+/** 音频设备选项类型，包含后端信息用于 UI 显示 */
+export type AudioDeviceOption = { backend?: string; label: string; value: string };
 
-export const useAudioDevices = (playbackType: PlayerType) => {
+/** 后端名称映射为友好标签 */
+const BACKEND_LABELS: Record<string, string> = {
+    dsound: '[DS]',
+    wasapi: '[WASAPI]',
+    waveout: '[WaveOut]',
+};
+
+export const useAudioDevices = (playbackType: PlayerType, aoBackend?: string) => {
     const [audioDevices, setAudioDevices] = useState<AudioDeviceOption[]>([]);
 
     useEffect(() => {
@@ -67,11 +75,20 @@ export const useAudioDevices = (playbackType: PlayerType) => {
                     );
             } else if (playbackType === PlayerType.LOCAL && mpvPlayer) {
                 try {
-                    const devices = await getMpvAudioDevices();
+                    const devices = await getMpvAudioDevices(aoBackend);
                     const uniqueDevices = devices.filter(
                         (d, index, self) => index === self.findIndex((t) => t.value === d.value),
                     );
-                    setAudioDevices(uniqueDevices);
+                    // 为 MPV 设备添加后端标签前缀
+                    setAudioDevices(
+                        uniqueDevices.map((d) => {
+                            const backendTag = d.backend
+                                ? BACKEND_LABELS[d.backend] || `[${d.backend}]`
+                                : '';
+                            const displayLabel = backendTag ? `${backendTag} ${d.label}` : d.label;
+                            return { backend: d.backend, label: displayLabel, value: d.value };
+                        }),
+                    );
                 } catch {
                     toast.error({
                         message: t('error.audioDeviceFetchError', {
@@ -83,7 +100,7 @@ export const useAudioDevices = (playbackType: PlayerType) => {
         };
 
         fetchAudioDevices();
-    }, [playbackType]);
+    }, [playbackType, aoBackend]);
 
     return audioDevices;
 };
@@ -95,7 +112,7 @@ export const AudioSettings = memo(() => {
     const status = usePlayerStatus();
     const playbackType = usePlaybackType();
 
-    const audioDevices = useAudioDevices(playbackType);
+    const audioDevices = useAudioDevices(playbackType, settings.mpvProperties?.audioOutputBackend);
     const audioDeviceId =
         playbackType === PlayerType.LOCAL ? settings.mpvAudioDeviceId : settings.audioDeviceId;
 

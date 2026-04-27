@@ -3,6 +3,7 @@ import { ipcRenderer, IpcRendererEvent } from 'electron';
 import { PlayerData } from '/@/shared/types/domain-types';
 
 const initialize = (data: { extraParameters?: string[]; properties?: Record<string, any> }) => {
+    console.log(`[PRELOAD-MPV] initialize: extraParameters=${JSON.stringify(data.extraParameters)}, properties=${JSON.stringify(data.properties)}`);
     return ipcRenderer.invoke('player-initialize', data);
 };
 
@@ -11,6 +12,7 @@ const restart = (data: {
     extraParameters?: string[];
     properties?: Record<string, any>;
 }) => {
+    console.log(`[PRELOAD-MPV] restart: extraParameters=${JSON.stringify(data.extraParameters)}, properties=${JSON.stringify(data.properties)}`);
     return ipcRenderer.invoke('player-restart', data);
 };
 
@@ -23,6 +25,7 @@ const cleanup = () => {
 };
 
 const setProperties = (data: Record<string, any>) => {
+    console.log(`[PRELOAD-MPV] setProperties: ${JSON.stringify(data)}`);
     ipcRenderer.send('player-set-properties', data);
 };
 
@@ -43,10 +46,12 @@ const next = () => {
 };
 
 const pause = () => {
+    console.log('[PRELOAD-MPV] pause');
     ipcRenderer.send('player-pause');
 };
 
 const play = () => {
+    console.log('[PRELOAD-MPV] play');
     ipcRenderer.send('player-play');
 };
 
@@ -63,14 +68,17 @@ const seekTo = (seconds: number) => {
 };
 
 const setQueue = (current?: string, next?: string, pause?: boolean) => {
+    console.log(`[PRELOAD-MPV] setQueue: current=${current?.substring(0, 80)}..., next=${next?.substring(0, 80)}..., pause=${pause}`);
     ipcRenderer.send('player-set-queue', current, next, pause);
 };
 
 const setQueueNext = (url?: string) => {
+    console.log(`[PRELOAD-MPV] setQueueNext: url=${url?.substring(0, 80)}...`);
     ipcRenderer.send('player-set-queue-next', url);
 };
 
 const stop = () => {
+    console.log('[PRELOAD-MPV] stop');
     ipcRenderer.send('player-stop');
 };
 
@@ -98,8 +106,8 @@ const getStreamMetadata = async () => {
     return ipcRenderer.invoke('player-stream-metadata');
 };
 
-const getAudioDevices = async () => {
-    return ipcRenderer.invoke('player-get-audio-devices');
+const getAudioDevices = async (aoBackend?: string) => {
+    return ipcRenderer.invoke('player-get-audio-devices', aoBackend);
 };
 
 const rendererAutoNext = (cb: (event: IpcRendererEvent, data: PlayerData) => void) => {
@@ -174,6 +182,10 @@ const rendererPlayerFallback = (cb: (event: IpcRendererEvent, data: boolean) => 
     ipcRenderer.on('renderer-player-fallback', cb);
 };
 
+const rendererRestartComplete = (cb: (event: IpcRendererEvent) => void) => {
+    ipcRenderer.on('renderer-player-restart-complete', cb);
+};
+
 export const mpvPlayer = {
     autoNext,
     cleanup,
@@ -212,6 +224,7 @@ export const mpvPlayerListener = {
     rendererPlayPause,
     rendererPrevious,
     rendererQuit,
+    rendererRestartComplete,
     rendererSkipBackward,
     rendererSkipForward,
     rendererStop,

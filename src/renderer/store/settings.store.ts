@@ -257,14 +257,21 @@ const TranscodingConfigSchema = z.object({
 });
 
 const MpvSettingsSchema = z.object({
+    audioBufferMs: z.number().optional(),
+    audioChannels: z.enum(['auto', 'stereo', '2', '5.1', '7.1']).optional(),
+    audioDither: z.enum(['no', 'fruit', 'ordered', 'error-diffusion']).optional(),
     audioExclusiveMode: z.enum(['no', 'yes']),
-    audioFormat: z.enum(['float', 's16', 's32']).optional(),
+    audioFormat: z.enum(['auto', 'float', 's16', 's24', 's32']).optional(),
+    audioOutputBackend: z.enum(['auto', 'wasapi', 'dsound', 'waveout']).optional(),
+    audioResampleHq: z.boolean(),
     audioSampleRateHz: z.number().optional(),
     gaplessAudio: z.enum(['no', 'weak', 'yes']),
     replayGainClip: z.boolean(),
     replayGainFallbackDB: z.number().optional(),
     replayGainMode: z.enum(['album', 'no', 'track']),
     replayGainPreampDB: z.number().optional(),
+    wasapiExclusiveBuffer: z.enum(['default', 'min', 'custom']).optional(),
+    wasapiExclusiveBufferUs: z.number().optional(),
 });
 
 const CssSettingsSchema = z.object({
@@ -1808,14 +1815,21 @@ const initialState: SettingsState = {
         mpvAudioDeviceId: undefined,
         mpvExtraParameters: [],
         mpvProperties: {
+            audioBufferMs: undefined,
+            audioChannels: undefined,
+            audioDither: undefined,
             audioExclusiveMode: 'no',
             audioFormat: undefined,
+            audioOutputBackend: 'auto',
+            audioResampleHq: false,
             audioSampleRateHz: 0,
             gaplessAudio: 'weak',
             replayGainClip: true,
             replayGainFallbackDB: undefined,
             replayGainMode: 'no',
             replayGainPreampDB: 0,
+            wasapiExclusiveBuffer: 'default',
+            wasapiExclusiveBufferUs: undefined,
         },
         preservePitch: true,
         scrobble: {
