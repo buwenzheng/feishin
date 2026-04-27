@@ -10,6 +10,10 @@ jobs:
             matrix:
                 os: [windows-latest]
 
+        env:
+            MPV_VERSION: '0.41.0'
+            MPV_ARCH: 'x86_64'
+
         steps:
             - name: Checkout git repo
               uses: actions/checkout@v6
@@ -21,6 +25,43 @@ jobs:
 
             - name: Install dependencies
               run: pnpm install
+
+            - name: Cache MPV binary
+              id: cache-mpv
+              uses: actions/cache@v4
+              with:
+                  path: resources/mpv
+                  key: mpv-shinchiro-${{ env.MPV_VERSION }}-${{ env.MPV_ARCH }}
+
+            - name: Download MPV binary (Windows)
+              if: steps.cache-mpv.outputs.cache-hit != 'true'
+              shell: pwsh
+              run: |
+                  $ErrorActionPreference = 'Stop'
+
+                  choco install 7zip -y --no-progress --limit-output
+
+                  $mpvFileName = "mpv-$env:MPV_VERSION-$env:MPV_ARCH.7z"
+                  $mpvUrl = "https://sourceforge.net/projects/mpv-player-windows/files/release/$mpvFileName/download"
+
+                  New-Item -ItemType Directory -Path "resources/mpv" -Force | Out-Null
+                  New-Item -ItemType Directory -Path ".cache/mpv" -Force | Out-Null
+
+                  $archivePath = ".cache/mpv/$mpvFileName"
+                  Write-Host "Downloading MPV: $mpvUrl -> $archivePath"
+                  Invoke-WebRequest -Uri $mpvUrl -OutFile $archivePath -UseBasicParsing
+
+                  Write-Host "Extracting MPV to resources/mpv"
+                  & 7z x $archivePath "-oresources/mpv" -y | Out-Null
+
+                  if (!(Test-Path "resources/mpv/mpv.exe")) { throw "resources/mpv/mpv.exe not found after extraction" }
+                  Write-Host "MPV ready: resources/mpv/mpv.exe"
+
+            - name: Assert MPV exists
+              shell: pwsh
+              run: |
+                  $ErrorActionPreference = 'Stop'
+                  if (!(Test-Path "resources/mpv/mpv.exe")) { throw "resources/mpv/mpv.exe missing" }
 
             - name: Build and Publish releases
               env:
