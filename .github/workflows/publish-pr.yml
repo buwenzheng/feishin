@@ -1,4 +1,4 @@
-name: Build desktop packages
+name: Publish (PR)
 
 on:
     workflow_dispatch:
@@ -7,17 +7,6 @@ on:
             - development
         paths:
             - 'src/**'
-            - 'package.json'
-            - 'pnpm-lock.yaml'
-            - 'electron-builder*.yml'
-    push:
-        branches:
-            - development
-            - main
-        paths:
-            - 'src/**'
-            - 'package.json'
-            - 'pnpm-lock.yaml'
             - 'electron-builder*.yml'
 
 jobs:
