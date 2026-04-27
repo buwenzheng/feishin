@@ -1,7 +1,7 @@
 name: Comment on pull request
 on:
     workflow_run:
-        workflows: ['Publish (PR)']
+        workflows: ['Build desktop packages']
         types: [completed]
 jobs:
     pr_comment:
