@@ -42,14 +42,22 @@ jobs:
                   choco install 7zip -y --no-progress --limit-output
 
                   $mpvFileName = "mpv-$env:MPV_VERSION-$env:MPV_ARCH.7z"
-                  $mpvUrl = "https://sourceforge.net/projects/mpv-player-windows/files/release/$mpvFileName/download"
+                  # Direct file mirror — the /download page often returns HTML on headless runners (invalid 7z).
+                  $mpvUrl = "https://downloads.sourceforge.net/project/mpv-player-windows/release/$mpvFileName"
 
                   New-Item -ItemType Directory -Path "resources/mpv" -Force | Out-Null
                   New-Item -ItemType Directory -Path ".cache/mpv" -Force | Out-Null
 
                   $archivePath = ".cache/mpv/$mpvFileName"
                   Write-Host "Downloading MPV: $mpvUrl -> $archivePath"
-                  Invoke-WebRequest -Uri $mpvUrl -OutFile $archivePath -UseBasicParsing
+                  curl.exe -fsSL -o $archivePath $mpvUrl
+
+                  $len = (Get-Item $archivePath).Length
+                  if ($len -lt 5MB) {
+                      Write-Host "First bytes (expect 7z signature 37 7A BC AF):"
+                      Format-Hex -Path $archivePath -Count 16
+                      throw "Downloaded file is too small ($len bytes); not a valid MPV archive."
+                  }
 
                   Write-Host "Extracting MPV to resources/mpv"
                   & 7z x $archivePath "-oresources/mpv" -y | Out-Null

@@ -3,7 +3,8 @@ $ErrorActionPreference = 'Stop'
 $mpvVersion = '0.41.0'
 $mpvArch = 'x86_64'
 $mpvFileName = "mpv-$mpvVersion-$mpvArch.7z"
-$mpvUrl = "https://sourceforge.net/projects/mpv-player-windows/files/release/$mpvFileName/download"
+# Direct mirror — SourceForge /download often saves an HTML page in CI/headless environments.
+$mpvUrl = "https://downloads.sourceforge.net/project/mpv-player-windows/release/$mpvFileName"
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $destDir = Join-Path $repoRoot 'resources\mpv'
@@ -32,7 +33,16 @@ New-Item -ItemType Directory -Path $destDir -Force | Out-Null
 New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
 
 Write-Host "Downloading MPV $mpvVersion ($mpvArch) ..."
-Invoke-WebRequest -Uri $mpvUrl -OutFile $archivePath -UseBasicParsing
+if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
+    curl.exe -fsSL -o $archivePath $mpvUrl
+} else {
+    Invoke-WebRequest -Uri $mpvUrl -OutFile $archivePath -UseBasicParsing
+}
+
+$len = (Get-Item $archivePath).Length
+if ($len -lt 5MB) {
+    throw "Downloaded file is too small ($len bytes); expected MPV 7z archive."
+}
 
 Write-Host "Extracting to $destDir ..."
 & 7z x $archivePath ("-o$destDir") -y | Out-Null

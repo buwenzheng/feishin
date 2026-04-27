@@ -4,7 +4,8 @@ set -euo pipefail
 mpv_version="0.41.0"
 mpv_arch="x86_64"
 mpv_filename="mpv-${mpv_version}-${mpv_arch}.7z"
-mpv_url="https://sourceforge.net/projects/mpv-player-windows/files/release/${mpv_filename}/download"
+# Direct mirror — /download often returns HTML in headless/CI environments.
+mpv_url="https://downloads.sourceforge.net/project/mpv-player-windows/release/${mpv_filename}"
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 dest_dir="${repo_root}/resources/mpv"
@@ -32,6 +33,13 @@ mkdir -p "${dest_dir}" "${cache_dir}"
 
 echo "Downloading MPV ${mpv_version} (${mpv_arch})..."
 curl -L --fail "${mpv_url}" -o "${archive_path}"
+
+size=$(wc -c < "${archive_path}" | tr -d ' ')
+min=$((5 * 1024 * 1024))
+if [[ "${size}" -lt "${min}" ]]; then
+  echo "ERROR: downloaded file is too small (${size} bytes); not a valid MPV archive." >&2
+  exit 1
+fi
 
 echo "Extracting to ${dest_dir}..."
 7z x "${archive_path}" "-o${dest_dir}" -y >/dev/null
