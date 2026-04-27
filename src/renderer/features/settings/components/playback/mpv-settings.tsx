@@ -31,6 +31,7 @@ export const MpvSettings = memo(() => {
     const { t } = useTranslation();
     const settings = usePlaybackSettings();
     const { setSettings } = useSettingsStoreActions();
+    const isWasapiBackend = settings.mpvProperties.audioOutputBackend === 'wasapi';
 
     const [mpvPath, setMpvPath] = useState('');
 
@@ -181,7 +182,7 @@ export const MpvSettings = memo(() => {
                 context: 'description',
                 postProcess: 'sentenceCase',
             }),
-            isHidden: settings.type !== PlayerType.LOCAL,
+            isHidden: settings.type !== PlayerType.LOCAL || !isWasapiBackend,
             note: t('common.restartRequired', { postProcess: 'sentenceCase' }),
             title: t('setting.audioExclusiveMode', { postProcess: 'sentenceCase' }),
         },
@@ -213,6 +214,7 @@ export const MpvSettings = memo(() => {
             }),
             isHidden:
                 settings.type !== PlayerType.LOCAL ||
+                !isWasapiBackend ||
                 settings.mpvProperties.audioExclusiveMode !== 'yes',
             note: t('common.restartRequired', { postProcess: 'sentenceCase' }),
             title: t('setting.wasapiExclusiveBuffer', { postProcess: 'sentenceCase' }),
@@ -242,6 +244,7 @@ export const MpvSettings = memo(() => {
             }),
             isHidden:
                 settings.type !== PlayerType.LOCAL ||
+                !isWasapiBackend ||
                 settings.mpvProperties.audioExclusiveMode !== 'yes' ||
                 settings.mpvProperties.wasapiExclusiveBuffer !== 'custom',
             note: t('common.restartRequired', { postProcess: 'sentenceCase' }),
