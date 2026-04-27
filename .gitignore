@@ -15,3 +15,7 @@ resources/mpv/
 # Git worktrees (agent/dev)
 .worktrees
 .worktrees/
+
+# Local dev artifacts
+tsconfig.node.tsbuildinfo
+screenshot_*.png

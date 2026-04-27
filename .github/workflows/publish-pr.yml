@@ -10,22 +10,7 @@ on:
             - 'electron-builder*.yml'
 
 jobs:
-    wait-for-lint:
-        if: github.event_name == 'pull_request'
-        runs-on: ubuntu-latest
-        steps:
-            - name: Wait for Test workflow to complete
-              uses: lewagon/wait-on-check-action@v1.4.1
-              with:
-                  ref: ${{ github.event.pull_request.head.sha }}
-                  check-name: 'lint'
-                  repo-token: ${{ secrets.GITHUB_TOKEN }}
-                  wait-interval: 10
-                  allowed-conclusions: success
-
     publish:
-        needs: wait-for-lint
-        if: always() && (needs.wait-for-lint.result == 'success' || needs.wait-for-lint.result == 'skipped')
         runs-on: ${{ matrix.os }}
 
         strategy:
@@ -43,6 +28,25 @@ jobs:
 
             - name: Install dependencies
               run: pnpm install
+
+            - name: Cache MPV binary
+              id: cache-mpv
+              if: matrix.os == 'windows-latest'
+              uses: actions/cache@v4
+              with:
+                  path: resources/mpv
+                  key: mpv-shinchiro-v0.41.0
+
+            - name: Download MPV binary (Windows)
+              if: steps.cache-mpv.outputs.cache-hit != 'true' && matrix.os == 'windows-latest'
+              shell: pwsh
+              run: |
+                  choco install mpv -y --no-progress --limit-output --force
+                  $mpvDir = (Get-ChildItem -Path "C:\ProgramData\chocolatey\lib\mpv" -Recurse -Filter "mpv.exe" -ErrorAction SilentlyContinue | Select-Object -First 1).DirectoryName
+                  if (-not $mpvDir) { Write-Error "mpv.exe not found"; exit 1 }
+                  New-Item -ItemType Directory -Path "resources/mpv" -Force | Out-Null
+                  Copy-Item "$mpvDir\*" -Destination "resources/mpv" -Recurse -Force
+                  Write-Host "MPV copied to resources/mpv"
 
             - name: Build for Windows
               if: ${{ matrix.os == 'windows-latest' }}

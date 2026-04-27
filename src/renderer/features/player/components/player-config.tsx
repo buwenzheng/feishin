@@ -238,7 +238,7 @@ const AudioDeviceConfig = () => {
     const playbackSettings = usePlaybackSettings();
     const { setSettings } = useSettingsStoreActions();
 
-    const audioDevices = useAudioDevices(playbackType);
+    const audioDevices = useAudioDevices(playbackType, playbackSettings.mpvProperties?.audioOutputBackend);
     const audioDeviceId =
         playbackType === PlayerType.LOCAL
             ? playbackSettings.mpvAudioDeviceId

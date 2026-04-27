@@ -9,6 +9,11 @@ files:
     - 'package.json'
 extraResources:
     - assets/**
+    # MPV 二进制文件 — 自定义编译版（含 WASAPI 支持）
+    - from: resources/mpv
+      to: mpv
+      filter:
+          - '**/*'
 asarUnpack:
     - resources/**
 win:
@@ -69,7 +74,7 @@ npmRebuild: false
 afterAllArtifactBuild: scripts/after-all-artifact-build.mjs
 publish:
     provider: github
-    owner: jeffvli
+    owner: buwenzheng
     repo: feishin
     channel: latest
-    releaseType: draft
+    releaseType: release
