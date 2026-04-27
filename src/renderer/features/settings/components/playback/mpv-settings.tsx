@@ -158,8 +158,6 @@ export const MpvSettings = memo(() => {
 
     const generalOptions: SettingOption[] = [
         // 音频输出后端（CLI 专用，需重启 MPV）
-<<<<<<< HEAD
-=======
         requiresMpvReload
             ? {
                   control: (
@@ -183,7 +181,6 @@ export const MpvSettings = memo(() => {
                   title: t('common.note', { postProcess: 'sentenceCase' }),
               }
             : null,
->>>>>>> feat/mpv-exclusive-ui
         {
             control: (
                 <Select
@@ -222,11 +219,7 @@ export const MpvSettings = memo(() => {
                 context: 'description',
                 postProcess: 'sentenceCase',
             }),
-<<<<<<< HEAD
-            isHidden: settings.type !== PlayerType.LOCAL,
-=======
             isHidden: settings.type !== PlayerType.LOCAL || !isWasapiBackend,
->>>>>>> feat/mpv-exclusive-ui
             note: t('common.restartRequired', { postProcess: 'sentenceCase' }),
             title: t('setting.audioExclusiveMode', { postProcess: 'sentenceCase' }),
         },
@@ -258,10 +251,7 @@ export const MpvSettings = memo(() => {
             }),
             isHidden:
                 settings.type !== PlayerType.LOCAL ||
-<<<<<<< HEAD
-=======
                 !isWasapiBackend ||
->>>>>>> feat/mpv-exclusive-ui
                 settings.mpvProperties.audioExclusiveMode !== 'yes',
             note: t('common.restartRequired', { postProcess: 'sentenceCase' }),
             title: t('setting.wasapiExclusiveBuffer', { postProcess: 'sentenceCase' }),
@@ -291,10 +281,7 @@ export const MpvSettings = memo(() => {
             }),
             isHidden:
                 settings.type !== PlayerType.LOCAL ||
-<<<<<<< HEAD
-=======
                 !isWasapiBackend ||
->>>>>>> feat/mpv-exclusive-ui
                 settings.mpvProperties.audioExclusiveMode !== 'yes' ||
                 settings.mpvProperties.wasapiExclusiveBuffer !== 'custom',
             note: t('common.restartRequired', { postProcess: 'sentenceCase' }),
@@ -369,33 +356,6 @@ export const MpvSettings = memo(() => {
             isHidden: settings.type !== PlayerType.LOCAL,
             note: t('common.restartRequired', { postProcess: 'sentenceCase' }),
             title: t('setting.audioResampleHq', { postProcess: 'sentenceCase' }),
-<<<<<<< HEAD
-        },
-        // 音频缓冲区
-        {
-            control: (
-                <NumberInput
-                    defaultValue={settings.mpvProperties.audioBufferMs || undefined}
-                    max={500}
-                    min={10}
-                    onBlur={(e) => {
-                        const value = Number(e.currentTarget.value);
-                        handleSetMpvProperty('audioBufferMs', value >= 10 ? value : undefined);
-                    }}
-                    placeholder="50"
-                    rightSection={<Text size="xs">ms</Text>}
-                    width={100}
-                />
-            ),
-            description: t('setting.audioBufferMs', {
-                context: 'description',
-                postProcess: 'sentenceCase',
-            }),
-            isHidden: settings.type !== PlayerType.LOCAL,
-            note: t('common.restartRequired', { postProcess: 'sentenceCase' }),
-            title: t('setting.audioBufferMs', { postProcess: 'sentenceCase' }),
-=======
->>>>>>> feat/mpv-exclusive-ui
         },
         // 音频缓冲区
         {
