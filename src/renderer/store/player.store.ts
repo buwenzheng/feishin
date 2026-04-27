@@ -1042,6 +1042,8 @@ export const usePlayerStoreBase = createWithEqualityFn<PlayerState>()(
                         state.player.status = PlayerStatus.PLAYING;
                     });
 
+                    console.log(`[PLAYER] mediaPlay: id=${id}, playIndex=${playIndex}`);
+
                     if (id && playIndex !== undefined) {
                         eventEmitter.emit('PLAYER_PLAY', {
                             id,
@@ -1132,6 +1134,7 @@ export const usePlayerStoreBase = createWithEqualityFn<PlayerState>()(
                     });
                 },
                 mediaSeekToTimestamp: (timestamp: number) => {
+                    console.log(`[PLAYER] mediaSeekToTimestamp: ${timestamp}`);
                     set((state) => {
                         state.player.seekToTimestamp = uniqueSeekToTimestamp(timestamp);
                     });
@@ -1170,6 +1173,7 @@ export const usePlayerStoreBase = createWithEqualityFn<PlayerState>()(
                 },
                 mediaStop: (options?: { reset?: boolean }) => {
                     const reset = options?.reset !== false;
+                    console.log(`[PLAYER] mediaStop: reset=${reset}`);
                     set((state) => {
                         state.player.status = PlayerStatus.PAUSED;
                         setTimestampStore(0);

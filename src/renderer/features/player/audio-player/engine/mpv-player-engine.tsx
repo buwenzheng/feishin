@@ -8,7 +8,10 @@ import { usePlayerEvents } from '/@/renderer/features/player/audio-player/hooks/
 import { getSongUrl } from '/@/renderer/features/player/audio-player/hooks/use-stream-url';
 import { AudioPlayer, PlayerOnProgressProps } from '/@/renderer/features/player/audio-player/types';
 import { useRadioStore } from '/@/renderer/features/radio/hooks/use-radio-player';
-import { getMpvProperties } from '/@/renderer/features/settings/components/playback/mpv-properties';
+import {
+    getMpvCliParameters,
+    getMpvProperties,
+} from '/@/renderer/features/settings/components/playback/mpv-properties';
 import {
     usePlaybackSettings,
     usePlayerActions,
@@ -37,6 +40,29 @@ const ipc = isElectron() ? window.api.ipc : null;
 
 const PROGRESS_UPDATE_INTERVAL = 250;
 
+/**
+ * 校验 audio-device 与 AO 后端是否匹配
+ * 当 --ao=wasapi 时，audio-device 必须是 "auto" 或 "wasapi/..." 格式
+ * 不匹配的设备会导致 MPV 音频输出初始化失败，播放立即 stopped
+ */
+const validateAudioDevice = (audioDevice: string, aoBackend?: string): string => {
+    if (!audioDevice || audioDevice === 'auto') return 'auto';
+    if (!aoBackend || aoBackend === 'auto') return audioDevice;
+
+    // audio-device 格式为 "backend/..." 或纯名称（如 "openal"）
+    const slashIndex = audioDevice.indexOf('/');
+    const deviceBackend = slashIndex > -1 ? audioDevice.substring(0, slashIndex) : audioDevice;
+
+    // 如果设备后端与 AO 后端匹配，直接使用
+    if (deviceBackend === aoBackend) return audioDevice;
+
+    // 不匹配：降级为 auto 并打印警告
+    console.warn(
+        `[MPV-ENGINE] Audio device "${audioDevice}" (backend=${deviceBackend}) does not match AO backend "${aoBackend}", falling back to "auto"`,
+    );
+    return 'auto';
+};
+
 export const MpvPlayerEngine = (props: MpvPlayerEngineProps) => {
     const {
         isMuted,
@@ -58,13 +84,19 @@ export const MpvPlayerEngine = (props: MpvPlayerEngineProps) => {
     const isMountedRef = useRef<boolean>(true);
 
     const { mpvAudioDeviceId, transcode } = usePlaybackSettings();
-    const mpvExtraParameters = useSettingsStore((store) => store.playback.mpvExtraParameters);
     const mpvProperties = useSettingsStore((store) => store.playback.mpvProperties);
-    const [reloadTrigger, setReloadTrigger] = useState(0);
 
     useEffect(() => {
-        const handleMpvReload = () => {
-            setReloadTrigger((prev) => prev + 1);
+        const handleMpvReload = async () => {
+            // 直接通过 IPC 重启 MPV，而非依赖 useEffect 重新运行
+            // useEffect 的 isRunning 检查会跳过重启，只更新属性
+            const mpvCliParams = getMpvCliParameters(mpvProperties);
+            const rawAudioDevice = mpvAudioDeviceId?.trim() || 'auto';
+            const audioDevice = validateAudioDevice(rawAudioDevice, mpvProperties.audioOutputBackend);
+            const extraParameters = [...mpvCliParams, `--audio-device=${audioDevice}`];
+            const properties = { ...getMpvProperties(mpvProperties), speed, volume };
+            console.log(`[MPV-ENGINE] MPV_RELOAD: extraParameters=${JSON.stringify(extraParameters)}, properties=${JSON.stringify(properties)}`);
+            await mpvPlayer?.restart({ extraParameters, properties });
         };
 
         eventEmitter.on('MPV_RELOAD', handleMpvReload);
@@ -72,7 +104,29 @@ export const MpvPlayerEngine = (props: MpvPlayerEngineProps) => {
         return () => {
             eventEmitter.off('MPV_RELOAD', handleMpvReload);
         };
-    }, []);
+    }, [mpvProperties, mpvAudioDeviceId, speed, volume]);
+
+    // 监听 MPV 重启完成事件，重新加载播放队列
+    useEffect(() => {
+        if (!mpvPlayerListener) {
+            return;
+        }
+
+        const handleRestartComplete = () => {
+            // 重启后 MPV 处于 idle 模式，需要重新加载当前歌曲
+            console.log('[MPV-ENGINE] Restart complete, reloading queue...');
+            // Preserve the user's play/pause intent across reload.
+            // If we always set pause=false here, a reload from paused state will auto-play.
+            const shouldPause = usePlayerStore.getState().status !== PlayerStatus.PLAYING;
+            replaceMpvQueue(transcode, shouldPause);
+        };
+
+        mpvPlayerListener.rendererRestartComplete(handleRestartComplete);
+
+        return () => {
+            ipc?.removeAllListeners('renderer-player-restart-complete');
+        };
+    }, [transcode]);
 
     // Start the mpv instance on startup
     useEffect(() => {
@@ -81,19 +135,21 @@ export const MpvPlayerEngine = (props: MpvPlayerEngineProps) => {
         const initializeMpv = async () => {
             // Always quit mpv first to ensure clean state, especially during HMR remounts
             const isRunning: boolean | undefined = await mpvPlayer?.isRunning();
-            if (isRunning) {
-                mpvPlayer?.quit();
 
-                let attempts = 0;
-                const maxAttempts = 20;
-                while (attempts < maxAttempts) {
-                    await new Promise((resolve) => setTimeout(resolve, 100));
-                    const stillRunning = await mpvPlayer?.isRunning();
-                    if (!stillRunning) {
-                        break;
-                    }
-                    attempts++;
-                }
+            if (isRunning) {
+                // MPV 已经在运行，只需重新设置属性，不需要重启
+                isInitializedRef.current = true;
+                hasPopulatedQueueRef.current = false;
+
+                // 更新属性
+                const properties: Record<string, any> = {
+                    ...getMpvProperties(mpvProperties),
+                    speed: speed,
+                    volume: volume,
+                };
+                console.log(`[MPV-ENGINE] Already running, updating properties: ${JSON.stringify(properties)}`);
+                mpvPlayer?.setProperties(properties);
+                return;
             }
 
             // Reset initialization state
@@ -107,18 +163,23 @@ export const MpvPlayerEngine = (props: MpvPlayerEngineProps) => {
                 volume: volume,
             };
 
-            const extraParameters: string[] = [...mpvExtraParameters];
+            // 构建 extraParameters：用户自定义 + WASAPI CLI 参数 + 音频设备
+            const extraParameters: string[] = [
+                ...getMpvCliParameters(mpvProperties),
+            ];
 
-            const audioDevice = mpvAudioDeviceId?.trim() || 'auto';
+            const rawAudioDevice = mpvAudioDeviceId?.trim() || 'auto';
+            const audioDevice = validateAudioDevice(rawAudioDevice, mpvProperties.audioOutputBackend);
             extraParameters.push(`--audio-device=${audioDevice}`);
+
+            console.log(`[MPV-ENGINE] Initializing MPV with extraParameters=${JSON.stringify(extraParameters)}, properties=${JSON.stringify(properties)}`);
 
             await mpvPlayer?.initialize({
                 extraParameters,
                 properties,
             });
 
-            // After initialization, populate the queue if currentSrc is available
-            // Don't override queue if radio is active
+            // 初始化后填充播放队列
             const radioState = useRadioStore.getState();
 
             if (!radioState.currentStreamUrl) {
@@ -130,7 +191,14 @@ export const MpvPlayerEngine = (props: MpvPlayerEngineProps) => {
                     ? await getSongUrl(playerData.nextSong, transcode, true)
                     : undefined;
 
-                if (currentSongUrl && nextSongUrl && !hasPopulatedQueueRef.current && mpvPlayer) {
+                // Populate at least the current song on startup.
+                // Previously we required both current + next to exist, which can leave MPV idle while the UI
+                // already emits play/seek (e.g. restoring state). That manifests as "first song can't play
+                // until next is pressed".
+                if (currentSongUrl && !hasPopulatedQueueRef.current && mpvPlayer) {
+                    console.log(
+                        `[MPV-ENGINE] Populating queue: current=${currentSongUrl?.substring(0, 80)}..., next=${nextSongUrl?.substring(0, 80) ?? 'none'}...`,
+                    );
                     mpvPlayer.setQueue(currentSongUrl, nextSongUrl, true);
                     hasPopulatedQueueRef.current = true;
                 }
@@ -143,8 +211,9 @@ export const MpvPlayerEngine = (props: MpvPlayerEngineProps) => {
 
         return () => {
             isMountedRef.current = false;
-            // Quit mpv on unmount
-            mpvPlayer?.quit();
+            // 不在 unmount 时 quit MPV —— HMR remount 会先 unmount 再 mount，
+            // 如果 quit 会杀掉正在运行的 MPV 实例，导致播放中断。
+            // isRunning 检查确保 remount 时发现已有实例不会重新初始化。
             isInitializedRef.current = false;
             hasPopulatedQueueRef.current = false;
         };
@@ -152,9 +221,8 @@ export const MpvPlayerEngine = (props: MpvPlayerEngineProps) => {
         // Volume and speed changes are handled by separate useEffects below to avoid
         // reinitializing the entire player. Transcode changes are handled by queue
         // update callbacks in usePlayerEvents.
-        // reloadTrigger is included to allow manual reload via MPV_RELOAD event.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mpvExtraParameters, mpvProperties, mpvAudioDeviceId, reloadTrigger]);
+    }, [mpvProperties, mpvAudioDeviceId]);
 
     // Update volume
     useEffect(() => {
@@ -355,11 +423,14 @@ async function handleMpvAutoNext(transcode: {
     mpvPlayer?.autoNext(nextSongUrl);
 }
 
-async function replaceMpvQueue(transcode: {
+async function replaceMpvQueue(
+    transcode: {
     bitrate?: number | undefined;
     enabled: boolean;
     format?: string | undefined;
-}) {
+},
+    pause?: boolean,
+) {
     // Don't override queue if radio is active
     const radioState = useRadioStore.getState();
 
@@ -374,5 +445,5 @@ async function replaceMpvQueue(transcode: {
     const nextSongUrl = playerData.nextSong
         ? await getSongUrl(playerData.nextSong, transcode, true)
         : undefined;
-    mpvPlayer?.setQueue(currentSongUrl, nextSongUrl, false);
+    mpvPlayer?.setQueue(currentSongUrl, nextSongUrl, pause);
 }
