@@ -179,7 +179,10 @@
         "onlyBuiltDependencies": [
             "electron",
             "esbuild"
-        ]
+        ],
+        "patchedDependencies": {
+            "app-builder-lib@26.8.2": "patches/app-builder-lib@26.8.2.patch"
+        }
     },
     "productName": "feishin"
 }

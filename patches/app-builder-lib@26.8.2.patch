@@ -1,0 +1,52 @@
+diff --git a/out/node-module-collector/nodeModulesCollector.js b/out/node-module-collector/nodeModulesCollector.js
+index 0956d2657279b06ff210e5008583b9c35b533d5f..19933f680fa7f66f495f0d12968d2ee5d71d2505 100644
+--- a/out/node-module-collector/nodeModulesCollector.js
++++ b/out/node-module-collector/nodeModulesCollector.js
+@@ -294,8 +294,11 @@ class NodeModulesCollector {
+      * @throws {Error} If the child process spawn fails or exits with a non-zero code
+      */
+     async streamCollectorCommandToFile(command, args, cwd, tempOutputFile) {
+-        const execName = path.basename(command, path.extname(command));
+-        const isWindowsScriptFile = process.platform === "win32" && path.extname(command).toLowerCase() === ".cmd";
++        const pmCommand = command;
++        const originalArgs = args.slice();
++        const execName = path.basename(pmCommand, path.extname(pmCommand));
++        const ext = path.extname(pmCommand).toLowerCase();
++        const isWindowsScriptFile = process.platform === "win32" && (ext === ".cmd" || ext === ".bat");
+         if (isWindowsScriptFile) {
+             // If the command is a Windows script file (.cmd), we need to wrap it in a .bat file to ensure it runs correctly with cmd.exe
+             // This is necessary because .cmd files are not directly executable in the same way as .bat files.
+@@ -305,17 +308,20 @@ class NodeModulesCollector {
+                 prefix: execName,
+                 suffix: ".bat",
+             });
+-            const batScript = `@echo off\r\n"${command}" %*\r\n`; // <-- CRLF required for .bat
++            const batScript = `@echo off\r\n"${pmCommand}" %*\r\n`; // <-- CRLF required for .bat
+             await fs.writeFile(tempBatFile, batScript, { encoding: "utf8" });
+-            command = "cmd.exe";
+-            args = ["/c", `"${tempBatFile}"`, ...args];
++            const comSpec = process.env.ComSpec ?? "cmd.exe";
++            command = comSpec;
++            args = ["/d", "/s", "/c", `"${tempBatFile}"`, ...args];
+         }
+         await new Promise((resolve, reject) => {
+             const outStream = (0, fs_extra_1.createWriteStream)(tempOutputFile);
+             const child = childProcess.spawn(command, args, {
+                 cwd,
+                 env: { COREPACK_ENABLE_STRICT: "0", ...process.env }, // allow `process.env` overrides
+-                shell: true, // `true`` is now required: https://github.com/electron-userland/electron-builder/issues/9488
++                // On Windows, avoid `shell: true` here: we either invoke the package manager directly, or we invoke `cmd.exe`
++                // explicitly for `.cmd` via the `.bat` shim above. `shell: true` would wrap `cmd.exe` again and break quoting.
++                shell: process.platform !== "win32", // `true`` is now required: https://github.com/electron-userland/electron-builder/issues/9488
+             });
+             let stderr = "";
+             child.stdout.pipe(outStream);
+@@ -328,7 +334,7 @@ class NodeModulesCollector {
+             child.on("close", code => {
+                 outStream.close();
+                 // https://github.com/npm/npm/issues/17624
+-                const shouldIgnore = code === 1 && "npm" === execName.toLowerCase() && args.includes("list");
++                const shouldIgnore = code === 1 && "npm" === execName.toLowerCase() && originalArgs.includes("list");
+                 if (shouldIgnore) {
+                     builder_util_1.log.debug(null, "`npm list` returned non-zero exit code, but it MIGHT be expected (https://github.com/npm/npm/issues/17624). Check stderr for details.");
+                 }
