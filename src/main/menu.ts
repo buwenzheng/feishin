@@ -2,6 +2,7 @@ import { app, BrowserWindow, Menu, MenuItemConstructorOptions, shell } from 'ele
 
 import packageJson from '../../package.json';
 
+import { GITHUB_RELEASE_WEB_BASE } from '/@/shared/github-release-repo';
 import { PlayerRepeat, PlayerStatus } from '/@/shared/types/types';
 
 export type MenuPlaybackState = {
@@ -289,27 +290,27 @@ export default class MenuBuilder {
             submenu: [
                 {
                     click() {
-                        shell.openExternal('https://github.com/jeffvli/feishin');
+                        shell.openExternal(GITHUB_RELEASE_WEB_BASE);
                     },
                     label: 'Learn More',
                 },
                 {
                     click() {
                         shell.openExternal(
-                            'https://github.com/jeffvli/feishin?tab=readme-ov-file#getting-started',
+                            `${GITHUB_RELEASE_WEB_BASE}?tab=readme-ov-file#getting-started`,
                         );
                     },
                     label: 'Documentation',
                 },
                 {
                     click() {
-                        shell.openExternal('https://github.com/jeffvli/feishin/discussions');
+                        shell.openExternal(`${GITHUB_RELEASE_WEB_BASE}/discussions`);
                     },
                     label: 'Community Discussions',
                 },
                 {
                     click() {
-                        shell.openExternal('https://github.com/jeffvli/feishin/issues');
+                        shell.openExternal(`${GITHUB_RELEASE_WEB_BASE}/issues`);
                     },
                     label: 'Search Issues',
                 },
@@ -410,27 +411,27 @@ export default class MenuBuilder {
                 submenu: [
                     {
                         click() {
-                            shell.openExternal('https://github.com/jeffvli/feishin');
+                            shell.openExternal(GITHUB_RELEASE_WEB_BASE);
                         },
                         label: 'Learn More',
                     },
                     {
                         click() {
                             shell.openExternal(
-                                'https://github.com/jeffvli/feishin?tab=readme-ov-file#getting-started',
+                                `${GITHUB_RELEASE_WEB_BASE}?tab=readme-ov-file#getting-started`,
                             );
                         },
                         label: 'Documentation',
                     },
                     {
                         click() {
-                            shell.openExternal('https://github.com/jeffvli/feishin/discussions');
+                            shell.openExternal(`${GITHUB_RELEASE_WEB_BASE}/discussions`);
                         },
                         label: 'Community Discussions',
                     },
                     {
                         click() {
-                            shell.openExternal('https://github.com/jeffvli/feishin/issues');
+                            shell.openExternal(`${GITHUB_RELEASE_WEB_BASE}/issues`);
                         },
                         label: 'Search Issues',
                     },

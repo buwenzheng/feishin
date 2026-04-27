@@ -8,6 +8,12 @@ import { useTranslation } from 'react-i18next';
 import packageJson from '../../package.json';
 
 import { formatHrDateTime } from '/@/renderer/utils/format';
+import {
+    GITHUB_COMPARE_API_URL,
+    GITHUB_RELEASES_API_URL,
+    githubCompareWebUrl,
+    githubReleaseTagUrl,
+} from '/@/shared/github-release-repo';
 import { Button } from '/@/shared/components/button/button';
 import { Center } from '/@/shared/components/center/center';
 import { Group } from '/@/shared/components/group/group';
@@ -19,8 +25,6 @@ import { Stack } from '/@/shared/components/stack/stack';
 import { Text } from '/@/shared/components/text/text';
 import { useLocalStorage } from '/@/shared/hooks/use-local-storage';
 
-const GITHUB_RELEASES_URL = 'https://api.github.com/repos/jeffvli/feishin/releases';
-const GITHUB_COMPARE_URL = 'https://api.github.com/repos/jeffvli/feishin/compare';
 const RELEASES_TO_FETCH = 30;
 
 interface GitHubCompareCommit {
@@ -70,7 +74,7 @@ const ReleaseNotesContent = ({ onDismiss, version }: ReleaseNotesContentProps) =
     // Fetch list of recent releases for the selector
     const { data: releasesList = [] } = useQuery({
         queryFn: async () => {
-            const response = await axios.get<GitHubRelease[]>(GITHUB_RELEASES_URL, {
+            const response = await axios.get<GitHubRelease[]>(GITHUB_RELEASES_API_URL, {
                 params: { per_page: RELEASES_TO_FETCH },
             });
             return response.data;
@@ -110,7 +114,7 @@ const ReleaseNotesContent = ({ onDismiss, version }: ReleaseNotesContentProps) =
             const base = latestStableRelease!.tag_name;
             const head = 'development';
             const response = await axios.get<GitHubCompareResponse>(
-                `${GITHUB_COMPARE_URL}/${base}...${head}`,
+                `${GITHUB_COMPARE_API_URL}/${base}...${head}`,
                 { params: { per_page: 100 } },
             );
             return response.data;
@@ -128,7 +132,7 @@ const ReleaseNotesContent = ({ onDismiss, version }: ReleaseNotesContentProps) =
         enabled: !isAlpha,
         queryFn: async () => {
             const response = await axios.get<GitHubRelease>(
-                `${GITHUB_RELEASES_URL}/tags/${toTag(selectedVersion)}`,
+                `${GITHUB_RELEASES_API_URL}/tags/${toTag(selectedVersion)}`,
             );
             return response.data;
         },
@@ -215,8 +219,11 @@ const ReleaseNotesContent = ({ onDismiss, version }: ReleaseNotesContentProps) =
                         component="a"
                         href={
                             showCompareError
-                                ? `https://github.com/jeffvli/feishin/compare/${latestStableRelease.tag_name}...${toTag(selectedVersion)}`
-                                : `https://github.com/jeffvli/feishin/releases/tag/${toTag(selectedVersion)}`
+                                ? githubCompareWebUrl(
+                                      latestStableRelease.tag_name,
+                                      toTag(selectedVersion),
+                                  )
+                                : githubReleaseTagUrl(toTag(selectedVersion))
                         }
                         onClick={onDismiss}
                         rightSection={<Icon icon="externalLink" />}
@@ -251,7 +258,7 @@ const ReleaseNotesContent = ({ onDismiss, version }: ReleaseNotesContentProps) =
                 <Group justify="flex-end">
                     <Button
                         component="a"
-                        href={`https://github.com/jeffvli/feishin/releases/tag/${toTag(selectedVersion)}`}
+                        href={githubReleaseTagUrl(toTag(selectedVersion))}
                         onClick={onDismiss}
                         rightSection={<Icon icon="externalLink" />}
                         target="_blank"
@@ -269,7 +276,10 @@ const ReleaseNotesContent = ({ onDismiss, version }: ReleaseNotesContentProps) =
 
     if (isAlpha && compareData) {
         const commits = compareData.commits ?? [];
-        const compareUrl = `https://github.com/jeffvli/feishin/compare/${latestStableRelease?.tag_name}...development`;
+        const compareUrl = githubCompareWebUrl(
+            latestStableRelease?.tag_name ?? '',
+            'development',
+        );
         return (
             <Stack gap="md">
                 {releaseOptions.length > 1 && (
@@ -379,7 +389,7 @@ const ReleaseNotesContent = ({ onDismiss, version }: ReleaseNotesContentProps) =
             <Group justify="flex-end">
                 <Button
                     component="a"
-                    href={`https://github.com/jeffvli/feishin/releases/tag/${toTag(selectedVersion)}`}
+                    href={githubReleaseTagUrl(toTag(selectedVersion))}
                     onClick={onDismiss}
                     rightSection={<Icon icon="externalLink" />}
                     target="_blank"

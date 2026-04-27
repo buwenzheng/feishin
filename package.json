@@ -44,6 +44,7 @@
         "package:mac": "pnpm run build && electron-builder --mac",
         "package:mac:pr": "pnpm run build && electron-builder --mac --publish never",
         "package:win": "pnpm run build && electron-builder --win",
+        "package:release:win": "pnpm run package:win",
         "package:win:dev": "cross-env HTTP_PROXY=http://127.0.0.1:7890 HTTPS_PROXY=http://127.0.0.1:7890 ALL_PROXY=http://127.0.0.1:7890 pnpm run build && cross-env HTTP_PROXY=http://127.0.0.1:7890 HTTPS_PROXY=http://127.0.0.1:7890 ALL_PROXY=http://127.0.0.1:7890 electron-builder --win",
         "package:win:dev:dir": "cross-env HTTP_PROXY=http://127.0.0.1:7890 HTTPS_PROXY=http://127.0.0.1:7890 ALL_PROXY=http://127.0.0.1:7890 pnpm run build && cross-env HTTP_PROXY=http://127.0.0.1:7890 HTTPS_PROXY=http://127.0.0.1:7890 ALL_PROXY=http://127.0.0.1:7890 electron-builder --dir --publish never",
         "package:win:pr": "pnpm run build && electron-builder --win --publish never",

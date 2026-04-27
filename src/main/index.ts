@@ -42,6 +42,7 @@ import {
 } from './utils';
 import './features';
 
+import { GITHUB_RELEASE_OWNER, GITHUB_RELEASE_REPO } from '/@/shared/github-release-repo';
 import { PlayerRepeat, PlayerStatus, PlayerType, TitleTheme } from '/@/shared/types/types';
 
 const ALPHA_UPDATER_CONFIG: {
@@ -57,9 +58,9 @@ const ALPHA_UPDATER_CONFIG: {
 };
 
 const GITHUB_UPDATER_CONFIG = {
-    owner: 'jeffvli',
+    owner: GITHUB_RELEASE_OWNER,
     provider: 'github' as const,
-    repo: 'feishin',
+    repo: GITHUB_RELEASE_REPO,
 };
 
 type UpdaterInstance = AppImageUpdater | MacUpdater | NsisUpdater | typeof autoUpdater;

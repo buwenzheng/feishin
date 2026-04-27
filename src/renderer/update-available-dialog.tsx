@@ -9,6 +9,7 @@ import { Icon } from '/@/shared/components/icon/icon';
 import { Stack } from '/@/shared/components/stack/stack';
 import { Text } from '/@/shared/components/text/text';
 import { useLocalStorage } from '/@/shared/hooks/use-local-storage';
+import { GITHUB_RELEASE_WEB_BASE } from '/@/shared/github-release-repo';
 
 export const UpdateAvailableDialog = () => {
     const [opened, setOpened] = useState(false);
@@ -63,7 +64,7 @@ export const UpdateAvailableDialog = () => {
                     </Button>
                     <Button
                         component="a"
-                        href="https://github.com/jeffvli/feishin/releases/latest"
+                        href={`${GITHUB_RELEASE_WEB_BASE}/releases/latest`}
                         onClick={handleDismiss}
                         rightSection={<Icon icon="externalLink" size="sm" />}
                         size="xs"
