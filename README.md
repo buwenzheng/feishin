@@ -190,6 +190,10 @@ Built and tested using Node `v23.11.0`.
 
 This project is built off of [electron-vite](https://github.com/alex8088/electron-vite)
 
+- **MPV binary (dev/worktree)**: MPV is bundled into release builds, but in development (especially when using git worktrees) the repository may not have `resources/mpv/mpv.exe` available by default. If MPV is missing, Feishin will fall back to `PATH`, and MPV playback/device enumeration will fail if `mpv` is not installed globally.
+  - Windows: `.\scripts\setup-mpv.ps1`
+  - macOS/Linux: `./scripts/setup-mpv.sh` (first run: `chmod +x scripts/setup-mpv.sh`)
+
 - `pnpm run dev` - Start the development server
 - `pnpm run dev:watch` - Start the development server in watch mode (for main / preload HMR)
 - `pnpm run start` - Starts the app in production preview mode
