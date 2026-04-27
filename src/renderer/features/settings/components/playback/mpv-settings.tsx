@@ -23,6 +23,7 @@ import { Switch } from '/@/shared/components/switch/switch';
 import { TextInput } from '/@/shared/components/text-input/text-input';
 import { Text } from '/@/shared/components/text/text';
 import { PlayerType } from '/@/shared/types/types';
+import { toast } from '/@/shared/components/toast/toast';
 
 const localSettings = isElectron() ? window.api.localSettings : null;
 const mpvPlayer = isElectron() ? window.api.mpvPlayer : null;
@@ -34,6 +35,11 @@ export const MpvSettings = memo(() => {
     const isWasapiBackend = settings.mpvProperties.audioOutputBackend === 'wasapi';
 
     const [mpvPath, setMpvPath] = useState('');
+    const [requiresMpvReload, setRequiresMpvReload] = useState(false);
+
+    const CLI_KEYS_REQUIRING_RELOAD = new Set<
+        keyof SettingsState['playback']['mpvProperties']
+    >(['audioOutputBackend', 'audioExclusiveMode', 'wasapiExclusiveBuffer', 'wasapiExclusiveBufferUs']);
 
     const handleSetMpvPath = async (clear?: boolean) => {
         if (clear) {
@@ -82,6 +88,10 @@ export const MpvSettings = memo(() => {
         if (mpvSetting && Object.keys(mpvSetting).length > 0) {
             mpvPlayer?.setProperties(mpvSetting);
         }
+
+        if (CLI_KEYS_REQUIRING_RELOAD.has(setting)) {
+            setRequiresMpvReload(true);
+        }
     };
 
     const player = usePlayer();
@@ -92,6 +102,10 @@ export const MpvSettings = memo(() => {
         console.log('[SETTINGS] User clicked MPV reload button');
         player.mediaStop({ reset: false });
         eventEmitter.emit('MPV_RELOAD', {});
+        setRequiresMpvReload(false);
+        toast.info({
+            message: t('common.reload', { postProcess: 'sentenceCase' }),
+        });
     };
 
     // MPV 可执行路径设置
@@ -144,6 +158,29 @@ export const MpvSettings = memo(() => {
 
     const generalOptions: SettingOption[] = [
         // 音频输出后端（CLI 专用，需重启 MPV）
+        requiresMpvReload
+            ? {
+                  control: (
+                      <Group gap="sm" justify="space-between">
+                          <Text size="sm">
+                              {t('setting.mpvReloadRequired', { postProcess: 'sentenceCase' })}
+                          </Text>
+                          <ActionIcon
+                              icon="refresh"
+                              onClick={handleReloadMpv}
+                              tooltip={{
+                                  label: t('common.reload', { postProcess: 'titleCase' }),
+                                  openDelay: 0,
+                              }}
+                              variant="subtle"
+                          />
+                      </Group>
+                  ),
+                  description: undefined,
+                  isHidden: settings.type !== PlayerType.LOCAL,
+                  title: t('common.note', { postProcess: 'sentenceCase' }),
+              }
+            : null,
         {
             control: (
                 <Select
@@ -344,7 +381,7 @@ export const MpvSettings = memo(() => {
             note: t('common.restartRequired', { postProcess: 'sentenceCase' }),
             title: t('setting.audioBufferMs', { postProcess: 'sentenceCase' }),
         },
-    ];
+    ].filter(Boolean) as SettingOption[];
 
     const replayGainOptions: SettingOption[] = [
         {
