@@ -22,8 +22,8 @@ import { Select } from '/@/shared/components/select/select';
 import { Switch } from '/@/shared/components/switch/switch';
 import { TextInput } from '/@/shared/components/text-input/text-input';
 import { Text } from '/@/shared/components/text/text';
-import { PlayerType } from '/@/shared/types/types';
 import { toast } from '/@/shared/components/toast/toast';
+import { PlayerType } from '/@/shared/types/types';
 
 const localSettings = isElectron() ? window.api.localSettings : null;
 const mpvPlayer = isElectron() ? window.api.mpvPlayer : null;
@@ -37,9 +37,12 @@ export const MpvSettings = memo(() => {
     const [mpvPath, setMpvPath] = useState('');
     const [requiresMpvReload, setRequiresMpvReload] = useState(false);
 
-    const CLI_KEYS_REQUIRING_RELOAD = new Set<
-        keyof SettingsState['playback']['mpvProperties']
-    >(['audioOutputBackend', 'audioExclusiveMode', 'wasapiExclusiveBuffer', 'wasapiExclusiveBufferUs']);
+    const CLI_KEYS_REQUIRING_RELOAD = new Set<keyof SettingsState['playback']['mpvProperties']>([
+        'audioExclusiveMode',
+        'audioOutputBackend',
+        'wasapiExclusiveBuffer',
+        'wasapiExclusiveBufferUs',
+    ]);
 
     const handleSetMpvPath = async (clear?: boolean) => {
         if (clear) {
@@ -125,7 +128,10 @@ export const MpvSettings = memo(() => {
                     <TextInput
                         onChange={(e) => {
                             setMpvPath(e.currentTarget.value);
-                            localSettings?.set('mpv_path', e.currentTarget.value.replace(/\\/g, '/'));
+                            localSettings?.set(
+                                'mpv_path',
+                                e.currentTarget.value.replace(/\\/g, '/'),
+                            );
                         }}
                         onClick={() => handleSetMpvPath()}
                         placeholder={t('setting.mpvExecutablePath', {

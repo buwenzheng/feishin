@@ -3,7 +3,9 @@ import { ipcRenderer, IpcRendererEvent } from 'electron';
 import { PlayerData } from '/@/shared/types/domain-types';
 
 const initialize = (data: { extraParameters?: string[]; properties?: Record<string, any> }) => {
-    console.log(`[PRELOAD-MPV] initialize: extraParameters=${JSON.stringify(data.extraParameters)}, properties=${JSON.stringify(data.properties)}`);
+    console.log(
+        `[PRELOAD-MPV] initialize: extraParameters=${JSON.stringify(data.extraParameters)}, properties=${JSON.stringify(data.properties)}`,
+    );
     return ipcRenderer.invoke('player-initialize', data);
 };
 
@@ -12,7 +14,9 @@ const restart = (data: {
     extraParameters?: string[];
     properties?: Record<string, any>;
 }) => {
-    console.log(`[PRELOAD-MPV] restart: extraParameters=${JSON.stringify(data.extraParameters)}, properties=${JSON.stringify(data.properties)}`);
+    console.log(
+        `[PRELOAD-MPV] restart: extraParameters=${JSON.stringify(data.extraParameters)}, properties=${JSON.stringify(data.properties)}`,
+    );
     return ipcRenderer.invoke('player-restart', data);
 };
 
@@ -68,7 +72,9 @@ const seekTo = (seconds: number) => {
 };
 
 const setQueue = (current?: string, next?: string, pause?: boolean) => {
-    console.log(`[PRELOAD-MPV] setQueue: current=${current?.substring(0, 80)}..., next=${next?.substring(0, 80)}..., pause=${pause}`);
+    console.log(
+        `[PRELOAD-MPV] setQueue: current=${current?.substring(0, 80)}..., next=${next?.substring(0, 80)}..., pause=${pause}`,
+    );
     ipcRenderer.send('player-set-queue', current, next, pause);
 };
 

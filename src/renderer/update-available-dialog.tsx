@@ -8,8 +8,8 @@ import { Group } from '/@/shared/components/group/group';
 import { Icon } from '/@/shared/components/icon/icon';
 import { Stack } from '/@/shared/components/stack/stack';
 import { Text } from '/@/shared/components/text/text';
-import { useLocalStorage } from '/@/shared/hooks/use-local-storage';
 import { GITHUB_RELEASE_WEB_BASE } from '/@/shared/github-release-repo';
+import { useLocalStorage } from '/@/shared/hooks/use-local-storage';
 
 export const UpdateAvailableDialog = () => {
     const [opened, setOpened] = useState(false);

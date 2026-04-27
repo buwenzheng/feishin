@@ -19,11 +19,8 @@ declare module 'node-mpv';
 let mpvInstance: MpvAPI | null = null;
 let mpvInitializing: boolean = false;
 let currentPlayerData: null | PlayerData = null;
-let currentSocketPath = isWindows()
-    ? `\\\\.\\pipe\\mpvserver-${pid}`
-    : `/tmp/node-mpv-${pid}.sock`;
+let currentSocketPath = isWindows() ? `\\\\.\\pipe\\mpvserver-${pid}` : `/tmp/node-mpv-${pid}.sock`;
 let lastRestartAtMs = 0;
-let lastMpvLogPath: null | string = null;
 
 const waitForMpvRunning = async (instance: MpvAPI, timeoutMs: number) => {
     const start = Date.now();
@@ -99,7 +96,10 @@ const getMpvBinaryPath = (): string | undefined => {
         type: 'info',
     });
     if (userPath && existsSync(userPath)) {
-        createLog({ message: `[AUDIO PLAYER] Using user-specified mpv at: ${userPath}`, type: 'info' });
+        createLog({
+            message: `[AUDIO PLAYER] Using user-specified mpv at: ${userPath}`,
+            type: 'info',
+        });
         return userPath;
     }
 
@@ -107,7 +107,10 @@ const getMpvBinaryPath = (): string | undefined => {
     if (process.resourcesPath) {
         const bundledPath = path.join(process.resourcesPath, 'mpv', 'mpv.exe');
         if (existsSync(bundledPath)) {
-            createLog({ message: `[AUDIO PLAYER] Using bundled mpv at: ${bundledPath}`, type: 'info' });
+            createLog({
+                message: `[AUDIO PLAYER] Using bundled mpv at: ${bundledPath}`,
+                type: 'info',
+            });
             return bundledPath;
         }
     }
@@ -120,7 +123,10 @@ const getMpvBinaryPath = (): string | undefined => {
     }
 
     // 4. 回退：由 node-mpv 自行在 PATH 中查找
-    createLog({ message: '[AUDIO PLAYER] No mpv found in bundled or dev paths, falling back to PATH lookup', type: 'warning' });
+    createLog({
+        message: '[AUDIO PLAYER] No mpv found in bundled or dev paths, falling back to PATH lookup',
+        type: 'warning',
+    });
     return undefined;
 };
 
@@ -129,11 +135,6 @@ const prefetchPlaylistParams = [
     '--prefetch-playlist=yes',
     '--prefetch-playlist',
 ];
-
-const hasCliFlag = (extraParameters: string[] | undefined, flag: string) => {
-    if (!extraParameters) return false;
-    return extraParameters.some((p) => p === flag || p.startsWith(`${flag}=`));
-};
 
 /**
  * 构建 MPV 默认 CLI 参数
@@ -172,7 +173,9 @@ const createMpv = async (data: {
         : `/tmp/node-mpv-${pid}-${Date.now()}.sock`;
 
     const resolvedBinary = binaryPath || getMpvBinaryPath() || undefined;
-    console.log(`[MAIN-MPV] createMpv: resolvedBinary=${resolvedBinary ?? 'undefined (PATH lookup)'}`);
+    console.log(
+        `[MAIN-MPV] createMpv: resolvedBinary=${resolvedBinary ?? 'undefined (PATH lookup)'}`,
+    );
     console.log(`[MAIN-MPV] createMpv: params=${JSON.stringify(params)}`);
     console.log(`[MAIN-MPV] createMpv: properties=${JSON.stringify(properties)}`);
     console.log(`[MAIN-MPV] createMpv: socket=${currentSocketPath}`);
@@ -197,7 +200,10 @@ const createMpv = async (data: {
         let timeoutId: ReturnType<typeof setTimeout> | undefined;
         const startPromise = mpv.start();
         const timeoutPromise = new Promise<never>((_, reject) => {
-            timeoutId = setTimeout(() => reject(new Error('mpv.start() timed out after 15s')), 15000);
+            timeoutId = setTimeout(
+                () => reject(new Error('mpv.start() timed out after 15s')),
+                15000,
+            );
         });
         await Promise.race([startPromise, timeoutPromise]);
         // mpv.start() 成功，清除超时定时器防止幽灵 reject
@@ -275,7 +281,7 @@ const createMpv = async (data: {
                 }
 
                 getMainWindow()?.webContents.send('renderer-player-stop');
-            } catch (e) {
+            } catch {
                 // If probe fails, fall back to existing behavior.
                 getMainWindow()?.webContents.send('renderer-player-stop');
             }
@@ -351,7 +357,9 @@ ipcMain.on('player-set-properties', async (_event, data: Record<string, any>) =>
             getMpvInstance()?.setMultipleProperties(data);
         }
     } catch (err: any | NodeMpvError) {
-        console.log(`[MAIN-MPV] setProperties FAILED: ${JSON.stringify(data)}, error=${err?.message || err}`);
+        console.log(
+            `[MAIN-MPV] setProperties FAILED: ${JSON.stringify(data)}, error=${err?.message || err}`,
+        );
         mpvLog({ action: `Failed to set properties: ${JSON.stringify(data)}` }, err);
     }
 });
@@ -373,7 +381,11 @@ ipcMain.handle(
 
             // 防止并发初始化
             if (mpvInitializing) {
-                createLog({ message: '[AUDIO PLAYER] MPV initialization already in progress during restart, skipping', type: 'warning' });
+                createLog({
+                    message:
+                        '[AUDIO PLAYER] MPV initialization already in progress during restart, skipping',
+                    type: 'warning',
+                });
                 return;
             }
             mpvInitializing = true;
@@ -388,7 +400,9 @@ ipcMain.handle(
 
             // 尝试优雅退出
             const oldInstance = getMpvInstance();
-            const oldProcess = oldInstance ? (oldInstance as any).process || (oldInstance as any).mpvProcess : null;
+            const oldProcess = oldInstance
+                ? (oldInstance as any).process || (oldInstance as any).mpvProcess
+                : null;
             try {
                 await oldInstance?.quit();
             } catch {
@@ -401,7 +415,10 @@ ipcMain.handle(
                     // 检查进程是否仍在运行
                     if (oldProcess.exitCode === null) {
                         oldProcess.kill('SIGKILL');
-                        createLog({ message: '[AUDIO PLAYER] Forcefully killed old mpv process', type: 'warning' });
+                        createLog({
+                            message: '[AUDIO PLAYER] Forcefully killed old mpv process',
+                            type: 'warning',
+                        });
                     }
                 } catch {
                     // 进程可能已经退出
@@ -442,13 +459,19 @@ ipcMain.handle(
         try {
             // 防止并发初始化（HMR remount 可能同时触发两次）
             if (mpvInitializing) {
-                createLog({ message: '[AUDIO PLAYER] MPV initialization already in progress, skipping', type: 'warning' });
+                createLog({
+                    message: '[AUDIO PLAYER] MPV initialization already in progress, skipping',
+                    type: 'warning',
+                });
                 return;
             }
 
             // 如果 MPV 已在运行，跳过初始化，只更新属性
             if (mpvInstance && mpvInstance.isRunning()) {
-                createLog({ message: '[AUDIO PLAYER] MPV already running, updating properties only', type: 'info' });
+                createLog({
+                    message: '[AUDIO PLAYER] MPV already running, updating properties only',
+                    type: 'info',
+                });
                 if (data.properties) {
                     await mpvInstance.setMultipleProperties(data.properties);
                 }
@@ -567,14 +590,20 @@ ipcMain.on('player-seek-to', async (_event, time: number) => {
         // 检查 MPV 是否处于 idle 状态（无文件加载），空闲时 seek 无意义
         const idle = await mpv.getProperty('idle-active').catch(() => true);
         if (idle) {
-            createLog({ message: `[AUDIO PLAYER] Seek to ${time}s skipped - MPV idle (no file loaded)`, type: 'info' });
+            createLog({
+                message: `[AUDIO PLAYER] Seek to ${time}s skipped - MPV idle (no file loaded)`,
+                type: 'info',
+            });
             return;
         }
         await mpv.goToPosition(time);
     } catch (err: any | NodeMpvError) {
         // 空闲状态下的 seek 失败是正常竞态，不报错
         if (err?.errcode === 3 || err?.errcode === 8) {
-            createLog({ message: `[AUDIO PLAYER] Seek to ${time}s skipped - MPV not ready`, type: 'info' });
+            createLog({
+                message: `[AUDIO PLAYER] Seek to ${time}s skipped - MPV not ready`,
+                type: 'info',
+            });
             return;
         }
         mpvLog({ action: `Failed to seek to ${time} seconds` }, err);
@@ -582,7 +611,10 @@ ipcMain.on('player-seek-to', async (_event, time: number) => {
 });
 
 ipcMain.on('player-set-queue', async (_event, current?: string, next?: string, pause?: boolean) => {
-    createLog({ message: `[AUDIO PLAYER] setQueue: current=${current ? current.substring(0, 80) : 'none'}, next=${next ? next.substring(0, 80) : 'none'}, pause=${pause}`, type: 'info' });
+    createLog({
+        message: `[AUDIO PLAYER] setQueue: current=${current ? current.substring(0, 80) : 'none'}, next=${next ? next.substring(0, 80) : 'none'}, pause=${pause}`,
+        type: 'info',
+    });
     if (!current && !next) {
         try {
             await getMpvInstance()?.clearPlaylist();
@@ -597,12 +629,17 @@ ipcMain.on('player-set-queue', async (_event, current?: string, next?: string, p
         if (current) {
             try {
                 await getMpvInstance()?.load(current, 'replace');
-                createLog({ message: '[AUDIO PLAYER] setQueue: current song loaded successfully', type: 'info' });
+                createLog({
+                    message: '[AUDIO PLAYER] setQueue: current song loaded successfully',
+                    type: 'info',
+                });
                 // 检查加载后 MPV 状态
                 const idleActive = await getMpvInstance()?.getProperty('idle-active');
                 const pauseState = await getMpvInstance()?.getProperty('pause');
                 const mediaTitle = await getMpvInstance()?.getProperty('media-title');
-                console.log(`[MAIN-MPV] post-load status: idle=${idleActive}, pause=${pauseState}, title=${mediaTitle}`);
+                console.log(
+                    `[MAIN-MPV] post-load status: idle=${idleActive}, pause=${pauseState}, title=${mediaTitle}`,
+                );
             } catch (error: any | NodeMpvError) {
                 console.log(`[MAIN-MPV] load failed: ${error?.message || error}`);
                 mpvLog({ action: `Failed to load current song` }, error);
@@ -617,7 +654,10 @@ ipcMain.on('player-set-queue', async (_event, current?: string, next?: string, p
         if (pause) {
             await getMpvInstance()?.pause();
         } else if (pause === false) {
-            createLog({ message: '[AUDIO PLAYER] setQueue: calling play() to start playback', type: 'info' });
+            createLog({
+                message: '[AUDIO PLAYER] setQueue: calling play() to start playback',
+                type: 'info',
+            });
             await getMpvInstance()?.play();
             createLog({ message: '[AUDIO PLAYER] setQueue: play() returned', type: 'info' });
         }
@@ -777,7 +817,10 @@ ipcMain.handle(
  */
 ipcMain.handle(
     'player-get-audio-devices',
-    async (_event, aoBackend?: string): Promise<{ backend: string; label: string; value: string }[]> => {
+    async (
+        _event,
+        aoBackend?: string,
+    ): Promise<{ backend: string; label: string; value: string }[]> => {
         try {
             const instance = getMpvInstance();
             let tempInstance: MpvAPI | null = null;
@@ -838,7 +881,9 @@ ipcMain.handle(
                     const filtered = devices.filter(
                         (d) => d.value === 'auto' || d.backend === aoBackend,
                     );
-                    console.log(`[MAIN-MPV] Audio device filter: ao=${aoBackend}, total=${devices.length}, filtered=${filtered.length}`);
+                    console.log(
+                        `[MAIN-MPV] Audio device filter: ao=${aoBackend}, total=${devices.length}, filtered=${filtered.length}`,
+                    );
                     return filtered;
                 }
 

@@ -112,9 +112,7 @@ export const useMainPlayerListener = () => {
         mpvPlayerListener.rendererStop(() => {
             if (!isRadioActive) {
                 if (Date.now() < ignoreStopUntilMs) {
-                    console.log(
-                        '[PLAYER] Ignoring MPV stop event during reload/restart window',
-                    );
+                    console.log('[PLAYER] Ignoring MPV stop event during reload/restart window');
                     return;
                 }
                 mediaStop({ reset: false });

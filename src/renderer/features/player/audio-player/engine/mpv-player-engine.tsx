@@ -92,10 +92,15 @@ export const MpvPlayerEngine = (props: MpvPlayerEngineProps) => {
             // useEffect 的 isRunning 检查会跳过重启，只更新属性
             const mpvCliParams = getMpvCliParameters(mpvProperties);
             const rawAudioDevice = mpvAudioDeviceId?.trim() || 'auto';
-            const audioDevice = validateAudioDevice(rawAudioDevice, mpvProperties.audioOutputBackend);
+            const audioDevice = validateAudioDevice(
+                rawAudioDevice,
+                mpvProperties.audioOutputBackend,
+            );
             const extraParameters = [...mpvCliParams, `--audio-device=${audioDevice}`];
             const properties = { ...getMpvProperties(mpvProperties), speed, volume };
-            console.log(`[MPV-ENGINE] MPV_RELOAD: extraParameters=${JSON.stringify(extraParameters)}, properties=${JSON.stringify(properties)}`);
+            console.log(
+                `[MPV-ENGINE] MPV_RELOAD: extraParameters=${JSON.stringify(extraParameters)}, properties=${JSON.stringify(properties)}`,
+            );
             await mpvPlayer?.restart({ extraParameters, properties });
         };
 
@@ -147,7 +152,9 @@ export const MpvPlayerEngine = (props: MpvPlayerEngineProps) => {
                     speed: speed,
                     volume: volume,
                 };
-                console.log(`[MPV-ENGINE] Already running, updating properties: ${JSON.stringify(properties)}`);
+                console.log(
+                    `[MPV-ENGINE] Already running, updating properties: ${JSON.stringify(properties)}`,
+                );
                 mpvPlayer?.setProperties(properties);
                 return;
             }
@@ -164,15 +171,18 @@ export const MpvPlayerEngine = (props: MpvPlayerEngineProps) => {
             };
 
             // 构建 extraParameters：用户自定义 + WASAPI CLI 参数 + 音频设备
-            const extraParameters: string[] = [
-                ...getMpvCliParameters(mpvProperties),
-            ];
+            const extraParameters: string[] = [...getMpvCliParameters(mpvProperties)];
 
             const rawAudioDevice = mpvAudioDeviceId?.trim() || 'auto';
-            const audioDevice = validateAudioDevice(rawAudioDevice, mpvProperties.audioOutputBackend);
+            const audioDevice = validateAudioDevice(
+                rawAudioDevice,
+                mpvProperties.audioOutputBackend,
+            );
             extraParameters.push(`--audio-device=${audioDevice}`);
 
-            console.log(`[MPV-ENGINE] Initializing MPV with extraParameters=${JSON.stringify(extraParameters)}, properties=${JSON.stringify(properties)}`);
+            console.log(
+                `[MPV-ENGINE] Initializing MPV with extraParameters=${JSON.stringify(extraParameters)}, properties=${JSON.stringify(properties)}`,
+            );
 
             await mpvPlayer?.initialize({
                 extraParameters,
@@ -425,10 +435,10 @@ async function handleMpvAutoNext(transcode: {
 
 async function replaceMpvQueue(
     transcode: {
-    bitrate?: number | undefined;
-    enabled: boolean;
-    format?: string | undefined;
-},
+        bitrate?: number | undefined;
+        enabled: boolean;
+        format?: string | undefined;
+    },
     pause?: boolean,
 ) {
     // Don't override queue if radio is active

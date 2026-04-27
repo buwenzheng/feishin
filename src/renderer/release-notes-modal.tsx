@@ -8,12 +8,6 @@ import { useTranslation } from 'react-i18next';
 import packageJson from '../../package.json';
 
 import { formatHrDateTime } from '/@/renderer/utils/format';
-import {
-    GITHUB_COMPARE_API_URL,
-    GITHUB_RELEASES_API_URL,
-    githubCompareWebUrl,
-    githubReleaseTagUrl,
-} from '/@/shared/github-release-repo';
 import { Button } from '/@/shared/components/button/button';
 import { Center } from '/@/shared/components/center/center';
 import { Group } from '/@/shared/components/group/group';
@@ -23,6 +17,12 @@ import { Select } from '/@/shared/components/select/select';
 import { Spinner } from '/@/shared/components/spinner/spinner';
 import { Stack } from '/@/shared/components/stack/stack';
 import { Text } from '/@/shared/components/text/text';
+import {
+    GITHUB_COMPARE_API_URL,
+    GITHUB_RELEASES_API_URL,
+    githubCompareWebUrl,
+    githubReleaseTagUrl,
+} from '/@/shared/github-release-repo';
 import { useLocalStorage } from '/@/shared/hooks/use-local-storage';
 
 const RELEASES_TO_FETCH = 30;
@@ -276,10 +276,7 @@ const ReleaseNotesContent = ({ onDismiss, version }: ReleaseNotesContentProps) =
 
     if (isAlpha && compareData) {
         const commits = compareData.commits ?? [];
-        const compareUrl = githubCompareWebUrl(
-            latestStableRelease?.tag_name ?? '',
-            'development',
-        );
+        const compareUrl = githubCompareWebUrl(latestStableRelease?.tag_name ?? '', 'development');
         return (
             <Stack gap="md">
                 {releaseOptions.length > 1 && (

@@ -118,13 +118,15 @@ export const getMpvCliParameters = (
     // 上会触发解析错误并导致音频初始化失败（随后立即 stopped）。
     // 先临时禁用该参数，使用 mpv 默认行为，保证播放稳定；后续再补一个经过验证的低延迟参数方案。
 
-    console.log(`[MPV-PROPS] getMpvCliParameters: settings=${JSON.stringify({
-        audioExclusiveMode: settings.audioExclusiveMode,
-        audioOutputBackend: settings.audioOutputBackend,
-        audioResampleHq: settings.audioResampleHq,
-        wasapiExclusiveBuffer: settings.wasapiExclusiveBuffer,
-        wasapiExclusiveBufferUs: settings.wasapiExclusiveBufferUs,
-    })}, result=${JSON.stringify(params)}`);
+    console.log(
+        `[MPV-PROPS] getMpvCliParameters: settings=${JSON.stringify({
+            audioExclusiveMode: settings.audioExclusiveMode,
+            audioOutputBackend: settings.audioOutputBackend,
+            audioResampleHq: settings.audioResampleHq,
+            wasapiExclusiveBuffer: settings.wasapiExclusiveBuffer,
+            wasapiExclusiveBufferUs: settings.wasapiExclusiveBufferUs,
+        })}, result=${JSON.stringify(params)}`,
+    );
 
     return params;
 };
