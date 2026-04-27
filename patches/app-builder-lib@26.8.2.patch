@@ -1,33 +1,43 @@
 diff --git a/out/node-module-collector/nodeModulesCollector.js b/out/node-module-collector/nodeModulesCollector.js
-index 0956d2657279b06ff210e5008583b9c35b533d5f..19933f680fa7f66f495f0d12968d2ee5d71d2505 100644
+index 0956d2657279b06ff210e5008583b9c35b533d5f..848a63699530e12c7d15bcc432b11ffbce6c37d9 100644
 --- a/out/node-module-collector/nodeModulesCollector.js
 +++ b/out/node-module-collector/nodeModulesCollector.js
-@@ -294,8 +294,11 @@ class NodeModulesCollector {
+@@ -294,9 +294,13 @@ class NodeModulesCollector {
       * @throws {Error} If the child process spawn fails or exits with a non-zero code
       */
      async streamCollectorCommandToFile(command, args, cwd, tempOutputFile) {
 -        const execName = path.basename(command, path.extname(command));
 -        const isWindowsScriptFile = process.platform === "win32" && path.extname(command).toLowerCase() === ".cmd";
+-        if (isWindowsScriptFile) {
 +        const pmCommand = command;
 +        const originalArgs = args.slice();
 +        const execName = path.basename(pmCommand, path.extname(pmCommand));
 +        const ext = path.extname(pmCommand).toLowerCase();
-+        const isWindowsScriptFile = process.platform === "win32" && (ext === ".cmd" || ext === ".bat");
-         if (isWindowsScriptFile) {
++        const isWindowsCmdFile = process.platform === "win32" && ext === ".cmd";
++        const isWindowsBatFile = process.platform === "win32" && ext === ".bat";
++        if (isWindowsCmdFile) {
              // If the command is a Windows script file (.cmd), we need to wrap it in a .bat file to ensure it runs correctly with cmd.exe
              // This is necessary because .cmd files are not directly executable in the same way as .bat files.
-@@ -305,17 +308,20 @@ class NodeModulesCollector {
+             // We create a temporary .bat file that calls the .cmd file with the provided arguments. The .bat file will be executed by cmd.exe.
+@@ -305,17 +309,27 @@ class NodeModulesCollector {
                  prefix: execName,
                  suffix: ".bat",
              });
 -            const batScript = `@echo off\r\n"${command}" %*\r\n`; // <-- CRLF required for .bat
-+            const batScript = `@echo off\r\n"${pmCommand}" %*\r\n`; // <-- CRLF required for .bat
++            const quotedForBatCall = pmCommand.replace(/"/g, '""');
++            const batScript = `@echo off\r\ncall "${quotedForBatCall}" %*\r\n`; // <-- CRLF required for .bat
              await fs.writeFile(tempBatFile, batScript, { encoding: "utf8" });
 -            command = "cmd.exe";
 -            args = ["/c", `"${tempBatFile}"`, ...args];
 +            const comSpec = process.env.ComSpec ?? "cmd.exe";
 +            command = comSpec;
-+            args = ["/d", "/s", "/c", `"${tempBatFile}"`, ...args];
++            args = ["/d", "/s", "/c", tempBatFile, ...args];
++        }
++        else if (isWindowsBatFile) {
++            // Corepack/pnpm may resolve to a `pnpm-*.bat` under Temp. Do not nest another launcher .bat (breaks 8.3 paths like RUNNER~1).
++            const comSpec = process.env.ComSpec ?? "cmd.exe";
++            command = comSpec;
++            args = ["/d", "/s", "/c", "call", pmCommand, ...args];
          }
          await new Promise((resolve, reject) => {
              const outStream = (0, fs_extra_1.createWriteStream)(tempOutputFile);
@@ -41,7 +51,7 @@ index 0956d2657279b06ff210e5008583b9c35b533d5f..19933f680fa7f66f495f0d12968d2ee5
              });
              let stderr = "";
              child.stdout.pipe(outStream);
-@@ -328,7 +334,7 @@ class NodeModulesCollector {
+@@ -328,7 +342,7 @@ class NodeModulesCollector {
              child.on("close", code => {
                  outStream.close();
                  // https://github.com/npm/npm/issues/17624
