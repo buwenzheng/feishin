@@ -248,6 +248,7 @@
         "gaplessAudio_description": "调整 mpv 无缝音频设置",
         "followLyric_description": "滚动歌词到当前播放位置",
         "audioExclusiveMode": "音频独占模式",
+        "mpvReloadRequired": "音频后端/独占设置修改后需要重载 MPV 才会生效",
         "font": "字体",
         "neteaseTranslation": "启用网易云歌词翻译",
         "neteaseTranslation_description": "启用后，在获取歌词时将包含并显示网易云音乐提供的翻译（如果存在）",

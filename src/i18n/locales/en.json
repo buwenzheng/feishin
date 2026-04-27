@@ -763,6 +763,7 @@
         "artistReleaseTypeConfiguration_description": "configure what release types are shown, and in what order, on the album artist page",
         "audioDevice_description": "select the audio device to use for playback",
         "audioDevice": "audio device",
+        "mpvReloadRequired": "audio backend / exclusive changes require reloading MPV to take effect",
         "audioExclusiveMode_description": "enable exclusive output mode. in this mode, the system is usually locked out, and only mpv will be able to output audio. visualizer system audio capture will not work while this is enabled",
         "audioExclusiveMode": "audio exclusive mode",
         "audioPlayer_description": "select the audio player to use for playback",

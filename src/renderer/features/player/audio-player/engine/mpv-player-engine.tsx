@@ -117,7 +117,7 @@ export const MpvPlayerEngine = (props: MpvPlayerEngineProps) => {
             console.log('[MPV-ENGINE] Restart complete, reloading queue...');
             // Preserve the user's play/pause intent across reload.
             // If we always set pause=false here, a reload from paused state will auto-play.
-            const shouldPause = usePlayerStore.getState().status !== PlayerStatus.PLAYING;
+            const shouldPause = usePlayerStore.getState().player.status !== PlayerStatus.PLAYING;
             replaceMpvQueue(transcode, shouldPause);
         };
 
