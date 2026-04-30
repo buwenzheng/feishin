@@ -34,6 +34,12 @@ export const useCreatePlaylist = (args: MutationHookArgs) => {
                 exact: false,
                 queryKey: infiniteLoaderDataQueryKey(serverId, LibraryItem.PLAYLIST),
             });
+
+            // Ensure sidebar playlist list updates immediately after creation.
+            queryClient.refetchQueries({
+                exact: false,
+                queryKey: queryKeys.playlists.root(serverId),
+            });
             options?.onSuccess?.(data, variables, context);
         },
     });

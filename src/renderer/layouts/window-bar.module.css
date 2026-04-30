@@ -47,6 +47,12 @@
     }
 }
 
+.refresh-button-container {
+    display: flex;
+    align-items: center;
+    -webkit-app-region: no-drag;
+}
+
 .player-status-container {
     display: flex;
     flex: 1;
@@ -144,4 +150,14 @@
 .macos-button.max-button,
 .macos-button.restore-button {
     grid-column: 3;
+}
+
+.macos-right-controls {
+    position: absolute;
+    top: 0;
+    right: 0.5rem;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    -webkit-app-region: no-drag;
 }

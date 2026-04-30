@@ -14,6 +14,7 @@ import macMin from './assets/min-mac.png';
 import styles from './window-bar.module.css';
 
 import { useRadioPlayer } from '/@/renderer/features/radio/hooks/use-radio-player';
+import { ServerRefreshButton } from '/@/renderer/features/titlebar/components/server-refresh-button';
 import { useAppStore, usePlayerData, usePlayerStatus, useWindowSettings } from '/@/renderer/store';
 import { Text } from '/@/shared/components/text/text';
 import { Platform, PlayerStatus } from '/@/shared/types/types';
@@ -45,6 +46,9 @@ const WindowsControls = ({ controls, title }: WindowBarControlsProps) => {
                 <Text className={styles.playerStatusText} overflow="hidden" size="sm">
                     {title}
                 </Text>
+            </div>
+            <div className={styles.refreshButtonContainer}>
+                <ServerRefreshButton />
             </div>
             <div className={styles.windowsButtonGroup}>
                 <div className={styles.windowsButton} onClick={handleMinimize} role="button">
@@ -117,6 +121,9 @@ const MacOsControls = ({ controls, title }: WindowBarControlsProps) => {
                         src={hoverClose ? macCloseHover : macClose}
                     />
                 </div>
+            </div>
+            <div className={styles.macosRightControls}>
+                <ServerRefreshButton />
             </div>
             <div className={styles.playerStatusContainer}>
                 <Text className={styles.playerStatusText} overflow="hidden" size="sm">

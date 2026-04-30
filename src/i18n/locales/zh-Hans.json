@@ -48,6 +48,8 @@
         "rating": "评分",
         "bpm": "bpm",
         "refresh": "刷新",
+        "refreshCompleted": "刷新完成",
+        "refreshFailed": "刷新失败",
         "unknown": "未知",
         "edit": "编辑",
         "favorite": "收藏",

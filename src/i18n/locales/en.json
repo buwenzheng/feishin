@@ -133,6 +133,8 @@
         "recordLabel": "record label",
         "releaseType": "release type",
         "refresh": "refresh",
+        "refreshCompleted": "refresh completed",
+        "refreshFailed": "refresh failed",
         "reload": "reload",
         "rename": "rename",
         "reset": "reset",
